@@ -41,11 +41,11 @@ CREATE TABLE empleado_turno (
     id_empleado INT NOT NULL,
     -- DDL: clave primaria compuesta para evitar duplicar el mismo empleado en el mismo turno.
     PRIMARY KEY (id_turno, id_empleado),
-    -- DDL: clave foránea hacia turnos.
+    -- DDL RELACIÓN (N:1): muchos registros de empleado_turno pueden apuntar al mismo turno en turnos(id_turno).
     CONSTRAINT fk_empleado_turno_turno
         FOREIGN KEY (id_turno) REFERENCES turnos(id_turno)
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    -- DDL: clave foránea hacia empleados.
+    -- DDL RELACIÓN (N:1): muchos registros de empleado_turno pueden apuntar al mismo empleado en empleados(id).
     CONSTRAINT fk_empleado_turno_empleado
         FOREIGN KEY (id_empleado) REFERENCES empleados(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
@@ -75,11 +75,11 @@ CREATE TABLE incidentes (
     id_turno INT NOT NULL,
     -- DDL: reactor asociado al incidente.
     id_reactor INT NOT NULL,
-    -- DDL: clave foránea del turno.
+    -- DDL RELACIÓN (N:1): muchos incidentes pueden ocurrir dentro de un mismo turno (turnos.id_turno).
     CONSTRAINT fk_incidente_turno
         FOREIGN KEY (id_turno) REFERENCES turnos(id_turno)
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    -- DDL: clave foránea del reactor.
+    -- DDL RELACIÓN (N:1): muchos incidentes pueden asociarse al mismo reactor (reactores.id_reactor).
     CONSTRAINT fk_incidente_reactor
         FOREIGN KEY (id_reactor) REFERENCES reactores(id_reactor)
         ON UPDATE CASCADE ON DELETE RESTRICT
@@ -97,7 +97,7 @@ CREATE TABLE mantenimientos (
     costo DECIMAL(10,2) NOT NULL,
     -- DDL: reactor al que se aplicó el mantenimiento.
     id_reactor INT NOT NULL,
-    -- DDL: clave foránea hacia reactores.
+    -- DDL RELACIÓN (N:1): muchos mantenimientos pueden corresponder a un mismo reactor (reactores.id_reactor).
     CONSTRAINT fk_mantenimiento_reactor
         FOREIGN KEY (id_reactor) REFERENCES reactores(id_reactor)
         ON UPDATE CASCADE ON DELETE RESTRICT
@@ -111,11 +111,21 @@ CREATE TABLE casilleros (
     numero INT NOT NULL,
     -- DDL: empleado dueño/asignado del casillero.
     id_empleado INT NOT NULL,
-    -- DDL: clave foránea hacia empleados.
+    -- DDL RELACIÓN (N:1): muchos casilleros (históricamente) podrían asociarse al mismo empleado; aquí registramos uno activo por fila.
     CONSTRAINT fk_casillero_empleado
         FOREIGN KEY (id_empleado) REFERENCES empleados(id)
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
+
+-- RESUMEN DOCENTE DE RELACIONES (CLAVES FORÁNEAS):
+-- 1) empleado_turno.id_turno   -> turnos.id_turno
+-- 2) empleado_turno.id_empleado-> empleados.id
+-- 3) incidentes.id_turno       -> turnos.id_turno
+-- 4) incidentes.id_reactor     -> reactores.id_reactor
+-- 5) mantenimientos.id_reactor -> reactores.id_reactor
+-- 6) casilleros.id_empleado    -> empleados.id
+-- Idea clave para clase: primero se insertan las tablas padre (empleados/turnos/reactores),
+-- luego las tablas hijas que contienen las FK (empleado_turno/incidentes/mantenimientos/casilleros).
 
 -- DML: insertamos 5 empleados (incluye Homero, Lisa, Carl y "Yo").
 INSERT INTO empleados (nombre, turno, rol) VALUES
