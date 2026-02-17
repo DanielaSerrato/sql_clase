@@ -74,7 +74,7 @@ INSERT INTO empleados (nombre, turno, rol) VALUES
 ('Lisa Simpson', 'tarde', 'Analista Junior'),
 ('Carl Carlson', 'noche', 'Operador'),
 ('Lenny Leonard', 'mañana', 'Técnico'),
-('Yo (Estudiante)', 'tarde', 'Practicante');
+('Daniela Serrato', 'tarde', 'Profesora');
 
 INSERT INTO turnos (fecha, hora_inicio, hora_fin) VALUES
 ('2025-05-01', '06:00:00', '14:00:00'),
