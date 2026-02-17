@@ -74,7 +74,7 @@ INSERT INTO empleados (nombre, turno, rol) VALUES
 ('Lisa Simpson', 'tarde', 'Analista Junior'),
 ('Carl Carlson', 'noche', 'Operador'),
 ('Lenny Leonard', 'mañana', 'Técnico'),
-('Daniela Serrato', 'tarde', 'Profesora');
+('Yo (Estudiante)', 'tarde', 'Practicante');
 
 INSERT INTO turnos (fecha, hora_inicio, hora_fin) VALUES
 ('2025-05-01', '06:00:00', '14:00:00'),
@@ -257,3 +257,53 @@ WHERE id_reactor NOT IN (SELECT id_reactor FROM reactores);
 SELECT COUNT(*) AS huerfanos_casilleros
 FROM casilleros
 WHERE id_empleado NOT IN (SELECT id FROM empleados);
+
+-- ==========================================================
+-- PASO 7) QUIZ EN CÓDIGO (retos de integridad para clase)
+-- ==========================================================
+-- Dinámica sugerida:
+-- 1) Lean el intento de Homero/Sr. Burns.
+-- 2) Predigan: ¿pasa o falla? ¿qué regla actúa? (Entidad / Referencial / Dominio)
+-- 3) Descomenten y ejecuten 1 por 1 para comprobar.
+
+-- QUIZ 1) Homero intenta registrar el MISMO incidente dos veces.
+-- Pregunta: ¿qué lo impide?
+-- Respuesta esperada: Integridad de ENTIDAD (PK duplicada en id_incidente).
+-- INSERT INTO incidentes (id_incidente, fecha, tipo, severidad, id_turno, id_reactor)
+-- VALUES (1, '2025-05-10', 'eléctrico', 2, 1, 1);
+
+-- QUIZ 2) Homero intenta guardar un incidente con "turno inexistente".
+-- Pregunta: ¿pasa sin FK? ¿pasa con FK ya agregada?
+-- Respuesta esperada: con FK activa, falla por integridad REFERENCIAL.
+-- INSERT INTO incidentes (fecha, tipo, severidad, id_turno, id_reactor)
+-- VALUES ('2025-05-10', 'mecánico', 2, 99, 1);
+
+-- QUIZ 3) Homero intenta guardar "rosado" como tipo de incidente.
+-- Pregunta: ¿qué regla lo frena?
+-- Respuesta esperada: Integridad de DOMINIO (ENUM en columna tipo).
+-- INSERT INTO incidentes (fecha, tipo, severidad, id_turno, id_reactor)
+-- VALUES ('2025-05-10', 'rosado', 2, 1, 1);
+
+-- QUIZ 4) Homero intenta poner severidad = 10.
+-- Pregunta: ¿qué regla lo frena?
+-- Respuesta esperada: Integridad de DOMINIO (CHECK severidad BETWEEN 1 AND 3).
+-- INSERT INTO incidentes (fecha, tipo, severidad, id_turno, id_reactor)
+-- VALUES ('2025-05-10', 'sistema', 10, 1, 1);
+
+-- QUIZ 5) El Sr. Burns despide a Homero y quiere borrarlo.
+-- Pregunta: con ON DELETE RESTRICT, ¿se puede borrar si tiene relaciones hijas?
+-- Respuesta esperada: NO; falla para evitar huérfanos.
+-- DELETE FROM empleados WHERE id = 1;
+
+-- QUIZ 6) Cambio de ID de empleado con ON UPDATE CASCADE.
+-- Pregunta: ¿se actualiza automáticamente en tablas hijas?
+-- Respuesta esperada: SÍ, se propaga en empleado_turno y casilleros.
+UPDATE empleados SET id = 70 WHERE id = 2;
+SELECT * FROM empleado_turno WHERE id_empleado IN (2,70);
+SELECT * FROM casilleros WHERE id_empleado IN (2,70);
+-- Restauración para no romper continuidad del guion.
+UPDATE empleados SET id = 2 WHERE id = 70;
+
+-- QUIZ 7) Pregunta conceptual rápida (sin ejecutar):
+-- Si quitáramos UNIQUE(id_empleado) en casilleros, ¿seguiría siendo 1:1?
+-- Respuesta esperada: NO, pasaría a 1:N (un empleado podría tener varios casilleros).
