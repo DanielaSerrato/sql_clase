@@ -47,6 +47,9 @@ CREATE TABLE incidentes (
     severidad INT NOT NULL,
     id_turno INT NOT NULL,
     id_reactor INT NOT NULL,
+    -- CHECK = regla de dominio.
+    -- Aquí definimos: severidad solo puede ser 1, 2 o 3
+    -- (puedes explicarlo como Bajo=1, Medio=2, Alto=3).
     CONSTRAINT chk_incidente_severidad CHECK (severidad BETWEEN 1 AND 3)
 );
 
@@ -260,6 +263,7 @@ WHERE id_empleado NOT IN (SELECT id FROM empleados);
 
 -- ==========================================================
 -- PASO 7) QUIZ EN CÓDIGO (retos de integridad para clase)
+-- Nota rápida: ENUM limita lista de textos válidos; CHECK limita rangos/reglas lógicas.
 -- ==========================================================
 -- Dinámica sugerida:
 -- 1) Lean el intento de Homero/Sr. Burns.
@@ -287,6 +291,7 @@ WHERE id_empleado NOT IN (SELECT id FROM empleados);
 -- QUIZ 4) Homero intenta poner severidad = 10.
 -- Pregunta: ¿qué regla lo frena?
 -- Respuesta esperada: Integridad de DOMINIO (CHECK severidad BETWEEN 1 AND 3).
+-- Equivalencia docente: 1=Bajo, 2=Medio, 3=Alto; cualquier otro valor falla.
 -- INSERT INTO incidentes (fecha, tipo, severidad, id_turno, id_reactor)
 -- VALUES ('2025-05-10', 'sistema', 10, 1, 1);
 
@@ -307,3 +312,11 @@ UPDATE empleados SET id = 2 WHERE id = 70;
 -- QUIZ 7) Pregunta conceptual rápida (sin ejecutar):
 -- Si quitáramos UNIQUE(id_empleado) en casilleros, ¿seguiría siendo 1:1?
 -- Respuesta esperada: NO, pasaría a 1:N (un empleado podría tener varios casilleros).
+-- QUIZ EXTRA CHECK) Pruebas rápidas solo de CHECK (descomentar una por una):
+-- Caso válido (pasa):
+-- INSERT INTO incidentes (fecha, tipo, severidad, id_turno, id_reactor)
+-- VALUES ('2025-05-11', 'sistema', 3, 1, 1);
+-- Caso inválido (falla por CHECK):
+-- INSERT INTO incidentes (fecha, tipo, severidad, id_turno, id_reactor)
+-- VALUES ('2025-05-11', 'sistema', -1, 1, 1);
+
