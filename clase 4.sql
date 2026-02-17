@@ -1,15 +1,9 @@
--- DDL: eliminamos la base si ya existe para poder ejecutar este script muchas veces sin errores.
-DROP DATABASE IF EXISTS planta_nuclear;
--- DDL: creamos la base de datos principal del ejercicio.
-CREATE DATABASE planta_nuclear
--- DDL: definimos juego de caracteres UTF-8 completo para soportar acentos y símbolos.
-  CHARACTER SET utf8mb4
--- DDL: configuramos collation en español para comparaciones/ordenamiento de texto.
-  COLLATE utf8mb4_spanish_ci;
--- DDL: seleccionamos la base recién creada para que todo se cree dentro de ella.
+-- =========================
+-- DDL: Creación de esquema
+-- =========================
+CREATE DATABASE IF NOT EXISTS planta_nuclear;
 USE planta_nuclear;
 
--- DDL: creamos la tabla de empleados.
 CREATE TABLE empleados (
     -- DDL: identificador único autoincremental (clave primaria).
     id INT AUTO_INCREMENT PRIMARY KEY,
