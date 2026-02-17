@@ -1,10 +1,9 @@
 -- ==========================================================
--- SCRIPT DOCENTE PASO A PASO - MySQL 8+ (Workbench)
--- Caso: Planta Nuclear de Springfield (Los Simpson)
--- Objetivo de clase: entender relaciones + reglas de integridad
+-- GUÍA DOCENTE (MySQL Workbench): de SIN FK -> CON FK
+-- Caso: Planta Nuclear de Springfield
 -- ==========================================================
 
--- PASO 0) Reinicio limpio del entorno
+-- PASO 0) Reinicio
 DROP DATABASE IF EXISTS planta_nuclear;
 CREATE DATABASE planta_nuclear
   CHARACTER SET utf8mb4
@@ -12,10 +11,8 @@ CREATE DATABASE planta_nuclear
 USE planta_nuclear;
 
 -- ==========================================================
--- PASO 1) MODELO FÍSICO (DDL)
+-- PASO 1) Crear tablas SIN claves foráneas (solo PK y dominio)
 -- ==========================================================
-
--- 1.1 Tabla PADRE: empleados
 CREATE TABLE empleados (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
@@ -23,7 +20,6 @@ CREATE TABLE empleados (
     rol VARCHAR(50) NULL
 );
 
--- 1.2 Tabla PADRE: turnos
 CREATE TABLE turnos (
     id_turno INT AUTO_INCREMENT PRIMARY KEY,
     fecha DATE NOT NULL,
@@ -31,28 +27,19 @@ CREATE TABLE turnos (
     hora_fin TIME NOT NULL
 );
 
--- 1.3 Tabla HIJA puente: empleado_turno
--- Relación N:N entre empleados y turnos resuelta con tabla intermedia.
+-- Tabla puente SIN FK por ahora (solo PK compuesta)
 CREATE TABLE empleado_turno (
     id_turno INT NOT NULL,
     id_empleado INT NOT NULL,
-    PRIMARY KEY (id_turno, id_empleado),
-    CONSTRAINT fk_empleado_turno_turno
-        FOREIGN KEY (id_turno) REFERENCES turnos(id_turno)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_empleado_turno_empleado
-        FOREIGN KEY (id_empleado) REFERENCES empleados(id)
-        ON UPDATE CASCADE ON DELETE RESTRICT
+    PRIMARY KEY (id_turno, id_empleado)
 );
 
--- 1.4 Tabla PADRE: reactores
 CREATE TABLE reactores (
     id_reactor INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     estado ENUM('activo','apagado','mantenimiento') NOT NULL
 );
 
--- 1.5 Tabla HIJA: incidentes
 CREATE TABLE incidentes (
     id_incidente INT AUTO_INCREMENT PRIMARY KEY,
     fecha DATE NOT NULL,
@@ -60,46 +47,34 @@ CREATE TABLE incidentes (
     severidad INT NOT NULL,
     id_turno INT NOT NULL,
     id_reactor INT NOT NULL,
-    CONSTRAINT chk_incidente_severidad CHECK (severidad BETWEEN 1 AND 3),
-    CONSTRAINT fk_incidente_turno
-        FOREIGN KEY (id_turno) REFERENCES turnos(id_turno)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_incidente_reactor
-        FOREIGN KEY (id_reactor) REFERENCES reactores(id_reactor)
-        ON UPDATE CASCADE ON DELETE RESTRICT
+    CONSTRAINT chk_incidente_severidad CHECK (severidad BETWEEN 1 AND 3)
 );
 
--- 1.6 Tabla HIJA: mantenimientos
 CREATE TABLE mantenimientos (
     id_mantenimiento INT AUTO_INCREMENT PRIMARY KEY,
     fecha DATE NOT NULL,
     tipo ENUM('eléctrico','mecánico','sistema') NOT NULL,
     costo DECIMAL(10,2) NOT NULL,
-    id_reactor INT NOT NULL,
-    CONSTRAINT fk_mantenimiento_reactor
-        FOREIGN KEY (id_reactor) REFERENCES reactores(id_reactor)
-        ON UPDATE CASCADE ON DELETE RESTRICT
+    id_reactor INT NOT NULL
 );
 
--- 1.7 Tabla HIJA: casilleros
 CREATE TABLE casilleros (
     id_casillero INT AUTO_INCREMENT PRIMARY KEY,
     numero INT NOT NULL,
     id_empleado INT NOT NULL,
-    CONSTRAINT fk_casillero_empleado
-        FOREIGN KEY (id_empleado) REFERENCES empleados(id)
-        ON UPDATE CASCADE ON DELETE RESTRICT
+    -- UNIQUE convierte la relación con empleados en 1:1 (un casillero activo por empleado).
+    CONSTRAINT uq_casillero_empleado UNIQUE (id_empleado)
 );
 
 -- ==========================================================
--- PASO 2) CARGA DE DATOS PADRE (DML)
+-- PASO 2) Cargar datos base (aún sin FK)
 -- ==========================================================
 INSERT INTO empleados (nombre, turno, rol) VALUES
 ('Homero Simpson', 'mañana', 'Supervisor de Seguridad'),
 ('Lisa Simpson', 'tarde', 'Analista Junior'),
 ('Carl Carlson', 'noche', 'Operador'),
 ('Lenny Leonard', 'mañana', 'Técnico'),
-('Yo (Estudiante)', 'tarde', 'Practicante');
+('Daniela Serrato', 'tarde', 'Profesora');
 
 INSERT INTO turnos (fecha, hora_inicio, hora_fin) VALUES
 ('2025-05-01', '06:00:00', '14:00:00'),
@@ -108,22 +83,15 @@ INSERT INTO turnos (fecha, hora_inicio, hora_fin) VALUES
 ('2025-05-04', '06:00:00', '14:00:00'),
 ('2025-05-05', '14:00:00', '22:00:00');
 
+INSERT INTO empleado_turno (id_turno, id_empleado) VALUES
+(1,1),(2,2),(3,3),(4,4),(5,5);
+
 INSERT INTO reactores (nombre, estado) VALUES
 ('Reactor A', 'activo'),
 ('Reactor B', 'mantenimiento'),
 ('Reactor C', 'apagado'),
 ('Reactor D', 'activo'),
 ('Reactor E', 'mantenimiento');
-
--- ==========================================================
--- PASO 3) CARGA DE DATOS HIJA (DML)
--- ==========================================================
-INSERT INTO empleado_turno (id_turno, id_empleado) VALUES
-(1, 1),
-(2, 2),
-(3, 3),
-(4, 4),
-(5, 5);
 
 INSERT INTO incidentes (fecha, tipo, severidad, id_turno, id_reactor) VALUES
 ('2025-05-01', 'eléctrico', 2, 1, 1),
@@ -140,98 +108,23 @@ INSERT INTO mantenimientos (fecha, tipo, costo, id_reactor) VALUES
 ('2025-05-05', 'eléctrico', 1999.99, 5);
 
 INSERT INTO casilleros (numero, id_empleado) VALUES
-(101, 1),
-(102, 2),
-(103, 3),
-(104, 4),
-(105, 5);
+(101,1),(102,2),(103,3),(104,4),(105,5);
 
 -- ==========================================================
--- PASO 4) CONSULTAS BASE (válidas)
+-- PASO 3) Validaciones iniciales (SIN JOIN)
 -- ==========================================================
 SELECT * FROM empleados;
+SELECT * FROM turnos;
+SELECT * FROM empleado_turno;
+SELECT * FROM reactores;
+SELECT * FROM incidentes;
+SELECT * FROM mantenimientos;
+SELECT * FROM casilleros;
 
 SELECT id, nombre, rol
 FROM empleados
 WHERE turno = 'tarde';
 
-SELECT i.id_incidente, i.fecha, i.tipo, i.severidad, r.nombre AS reactor, t.fecha AS fecha_turno
-FROM incidentes i
-JOIN reactores r ON i.id_reactor = r.id_reactor
-JOIN turnos t ON i.id_turno = t.id_turno;
-
-SELECT et.id_turno, t.fecha, e.id AS id_empleado, e.nombre, e.turno, e.rol
-FROM empleado_turno et
-JOIN empleados e ON et.id_empleado = e.id
-JOIN turnos t ON et.id_turno = t.id_turno;
-
-UPDATE empleados
-SET rol = 'Jefa de Seguridad'
-WHERE nombre = 'Lisa Simpson';
-
-SELECT id, nombre, rol
-FROM empleados
-WHERE nombre = 'Lisa Simpson';
-
--- Duplicado temporal + borrado por ID sin romper FKs.
-INSERT INTO turnos (fecha, hora_inicio, hora_fin)
-VALUES ('2025-05-05', '14:00:00', '22:00:00');
-
-DELETE FROM turnos
-WHERE id_turno = 6;
-
--- ==========================================================
--- PASO 5) CASOS DE INTEGRIDAD (para demostrar en clase)
--- ==========================================================
--- IMPORTANTE: estos casos están comentados para no romper la ejecución total.
--- Descomenta de a uno para mostrar el error en vivo.
-
--- CASO A) Integridad de ENTIDAD: PK duplicada (mismo id_incidente)
--- Esperado: ERROR por clave primaria duplicada.
--- INSERT INTO incidentes (id_incidente, fecha, tipo, severidad, id_turno, id_reactor)
--- VALUES (1, '2025-05-06', 'eléctrico', 2, 1, 1);
-
--- CASO B) Integridad REFERENCIAL: FK a padre inexistente
--- Esperado: ERROR, porque no existe id_turno = 99.
--- INSERT INTO incidentes (fecha, tipo, severidad, id_turno, id_reactor)
--- VALUES ('2025-05-06', 'mecánico', 2, 99, 1);
-
--- CASO C) Integridad de DOMINIO: valor fuera de ENUM
--- Esperado: ERROR, tipo='rosado' no es válido.
--- INSERT INTO incidentes (fecha, tipo, severidad, id_turno, id_reactor)
--- VALUES ('2025-05-06', 'rosado', 2, 1, 1);
-
--- CASO D) Integridad de DOMINIO: severidad fuera del CHECK
--- Esperado: ERROR, severidad debe ser 1..3.
--- INSERT INTO incidentes (fecha, tipo, severidad, id_turno, id_reactor)
--- VALUES ('2025-05-06', 'sistema', 10, 1, 1);
-
--- CASO E) ON DELETE RESTRICT: borrar padre con hijos
--- Esperado: ERROR al intentar borrar reactor 1, porque tiene incidentes/mantenimientos.
--- DELETE FROM reactores WHERE id_reactor = 1;
-
--- CASO F) ON UPDATE CASCADE: cambiar PK padre y ver propagación en hijas
--- (Demostración controlada: reactor 5 pasa a 50)
-UPDATE reactores SET id_reactor = 50 WHERE id_reactor = 5;
-SELECT id_incidente, id_reactor FROM incidentes WHERE id_incidente = 5;
-SELECT id_mantenimiento, id_reactor FROM mantenimientos WHERE id_mantenimiento = 5;
--- Volvemos al valor original para no alterar el cierre de clase:
-UPDATE reactores SET id_reactor = 5 WHERE id_reactor = 50;
-
--- ==========================================================
--- PASO 6) RESUMEN TEÓRICO ON DELETE / ON UPDATE
--- ==========================================================
--- RESTRICT / NO ACTION: bloquea borrar/actualizar padre con hijos.
--- CASCADE: propaga borrado/actualización a hijos.
--- SET NULL: deja FK en NULL (la columna hija debe permitir NULL).
-
--- En este modelo usamos:
---   ON DELETE RESTRICT (evitar huérfanos)
---   ON UPDATE CASCADE (propagar cambios de PK)
-
--- ==========================================================
--- PASO 7) AUTOVERIFICACIÓN FINAL
--- ==========================================================
 SELECT 'empleados' AS tabla, COUNT(*) AS total FROM empleados
 UNION ALL SELECT 'turnos', COUNT(*) FROM turnos
 UNION ALL SELECT 'empleado_turno', COUNT(*) FROM empleado_turno
@@ -240,24 +133,127 @@ UNION ALL SELECT 'incidentes', COUNT(*) FROM incidentes
 UNION ALL SELECT 'mantenimientos', COUNT(*) FROM mantenimientos
 UNION ALL SELECT 'casilleros', COUNT(*) FROM casilleros;
 
-SELECT COUNT(*) AS huerfanos_empleado_turno
-FROM empleado_turno et
-LEFT JOIN empleados e ON et.id_empleado = e.id
-LEFT JOIN turnos t ON et.id_turno = t.id_turno
-WHERE e.id IS NULL OR t.id_turno IS NULL;
+-- UPDATE de práctica
+UPDATE empleados
+SET rol = 'Jefa de Seguridad'
+WHERE nombre = 'Lisa Simpson';
 
-SELECT COUNT(*) AS huerfanos_incidentes
-FROM incidentes i
-LEFT JOIN turnos t ON i.id_turno = t.id_turno
-LEFT JOIN reactores r ON i.id_reactor = r.id_reactor
-WHERE t.id_turno IS NULL OR r.id_reactor IS NULL;
+SELECT id, nombre, rol
+FROM empleados
+WHERE nombre = 'Lisa Simpson';
+
+-- DELETE de práctica (duplicado temporal en turnos)
+INSERT INTO turnos (fecha, hora_inicio, hora_fin)
+VALUES ('2025-05-05', '14:00:00', '22:00:00');
+DELETE FROM turnos WHERE id_turno = 6;
+
+-- ==========================================================
+-- PASO 4) Ahora sí: agregar restricciones y claves foráneas (ALTER TABLE)
+-- ==========================================================
+-- CONSTRAINT = regla formal que MySQL hace cumplir.
+-- Aquí agregamos integridad referencial sobre datos ya cargados.
+
+ALTER TABLE empleado_turno
+ADD CONSTRAINT fk_empleado_turno_turno
+    FOREIGN KEY (id_turno) REFERENCES turnos(id_turno)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+ADD CONSTRAINT fk_empleado_turno_empleado
+    FOREIGN KEY (id_empleado) REFERENCES empleados(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT;
+
+ALTER TABLE incidentes
+ADD CONSTRAINT fk_incidente_turno
+    FOREIGN KEY (id_turno) REFERENCES turnos(id_turno)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+ADD CONSTRAINT fk_incidente_reactor
+    FOREIGN KEY (id_reactor) REFERENCES reactores(id_reactor)
+    ON UPDATE CASCADE ON DELETE RESTRICT;
+
+ALTER TABLE mantenimientos
+ADD CONSTRAINT fk_mantenimiento_reactor
+    FOREIGN KEY (id_reactor) REFERENCES reactores(id_reactor)
+    ON UPDATE CASCADE ON DELETE RESTRICT;
+
+-- Ya existe UNIQUE(id_empleado), por eso casilleros-empleados queda en 1:1.
+ALTER TABLE casilleros
+ADD CONSTRAINT fk_casillero_empleado
+    FOREIGN KEY (id_empleado) REFERENCES empleados(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT;
+
+-- ==========================================================
+-- PASO 5) Probar relaciones (SIN JOIN)
+-- ==========================================================
+-- 5.1 PK compuesta: duplicado exacto -> error (descomentar)
+-- INSERT INTO empleado_turno (id_turno, id_empleado) VALUES (1,1);
+
+-- 5.2 FK: turno inexistente -> error (descomentar)
+-- INSERT INTO empleado_turno (id_turno, id_empleado) VALUES (99,1);
+
+-- 5.3 FK: empleado inexistente -> error (descomentar)
+-- INSERT INTO empleado_turno (id_turno, id_empleado) VALUES (1,99);
+
+-- 5.4 ON DELETE RESTRICT: no deja borrar padre con hijos (descomentar)
+-- DELETE FROM empleados WHERE id = 1;
+-- DELETE FROM turnos WHERE id_turno = 1;
+
+-- 5.5 ON UPDATE CASCADE: cambia ID del padre y se propaga a la hija
+UPDATE empleados SET id = 50 WHERE id = 5;
+SELECT * FROM empleado_turno WHERE id_empleado IN (5,50);
+UPDATE empleados SET id = 5 WHERE id = 50;
+
+-- 5.6 Ver rápidamente las reglas creadas
+SHOW CREATE TABLE empleado_turno;
+SHOW CREATE TABLE incidentes;
+SHOW CREATE TABLE mantenimientos;
+SHOW CREATE TABLE casilleros;
+
+
+-- 5.7 Caso 1:1 en casilleros-empleados (por UNIQUE + FK)
+-- La relación quedó 1:1 porque id_empleado es UNIQUE en casilleros.
+-- Eso significa: un empleado NO puede tener dos casilleros activos.
+
+-- 5.7.a Inserción válida (nuevo casillero para empleado 1 ya existe en datos iniciales, así que usamos empleado 5 solo si no existe)
+-- INSERT INTO casilleros (numero, id_empleado) VALUES (106, 5);
+
+-- 5.7.b Error esperado por 1:1 (UNIQUE): empleado repetido en casilleros
+-- Como empleado 1 ya tiene casillero 101, este INSERT debe fallar.
+-- INSERT INTO casilleros (numero, id_empleado) VALUES (999, 1);
+
+-- 5.7.c Error esperado por FK: empleado inexistente
+-- INSERT INTO casilleros (numero, id_empleado) VALUES (200, 99);
+
+-- 5.7.d ON DELETE RESTRICT: no permite borrar un empleado con casillero asignado
+-- DELETE FROM empleados WHERE id = 1;
+
+-- 5.7.e ON UPDATE CASCADE: si cambia PK del empleado, se actualiza en casilleros
+UPDATE empleados SET id = 60 WHERE id = 4;
+SELECT * FROM casilleros WHERE id_empleado IN (4,60);
+UPDATE empleados SET id = 4 WHERE id = 60;
+SELECT * FROM casilleros WHERE numero = 104;
+
+-- ==========================================================
+-- PASO 6) Verificación final sin huérfanos (SIN JOIN)
+-- ==========================================================
+SELECT COUNT(*) AS huerfanos_empleado_turno_turno
+FROM empleado_turno
+WHERE id_turno NOT IN (SELECT id_turno FROM turnos);
+
+SELECT COUNT(*) AS huerfanos_empleado_turno_empleado
+FROM empleado_turno
+WHERE id_empleado NOT IN (SELECT id FROM empleados);
+
+SELECT COUNT(*) AS huerfanos_incidentes_turno
+FROM incidentes
+WHERE id_turno NOT IN (SELECT id_turno FROM turnos);
+
+SELECT COUNT(*) AS huerfanos_incidentes_reactor
+FROM incidentes
+WHERE id_reactor NOT IN (SELECT id_reactor FROM reactores);
 
 SELECT COUNT(*) AS huerfanos_mantenimientos
-FROM mantenimientos m
-LEFT JOIN reactores r ON m.id_reactor = r.id_reactor
-WHERE r.id_reactor IS NULL;
+FROM mantenimientos
+WHERE id_reactor NOT IN (SELECT id_reactor FROM reactores);
 
 SELECT COUNT(*) AS huerfanos_casilleros
-FROM casilleros c
-LEFT JOIN empleados e ON c.id_empleado = e.id
-WHERE e.id IS NULL;
+FROM casilleros
+WHERE id_empleado NOT IN (SELECT id FROM empleados);
