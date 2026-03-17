@@ -145,22 +145,6 @@ WHERE id = 202298;
 -- ─────────────────────────────────────────────
 
 
-CREATE PROCEDURE verificar_asesino(IN nombre VARCHAR(100))
-BEGIN
-    IF nombre = 'Jorge Benavides' THEN
-        SELECT 'CORRECTO: Encontraste al asesino material.' AS resultado;
-    ELSE
-        SELECT 'Incorrecto. Sigue investigando.' AS resultado;
-    END IF;
-END //
 
-CREATE PROCEDURE verificar_autora(IN nombre VARCHAR(100))
-BEGIN
-    IF nombre = 'Miranda Prieto' THEN
-        SELECT 'CORRECTO: Encontraste a la autora intelectual.' AS resultado;
-    ELSE
-        SELECT 'Incorrecto. Sigue investigando.' AS resultado;
-    END IF;
-END //
 
 DELIMITER ;
