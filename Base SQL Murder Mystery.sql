@@ -134,6 +134,12 @@ INSERT INTO entrevista VALUES
 INSERT INTO ingreso VALUES
 ('987756388', 310000);
 
+UPDATE licencia_conducir
+SET color_cabello = 'rojo',
+    marca_auto = 'Tesla',
+    modelo_auto = 'Model S'
+WHERE id = 202298;
+
 -- ─────────────────────────────────────────────
 -- PROCEDIMIENTOS
 -- ─────────────────────────────────────────────
